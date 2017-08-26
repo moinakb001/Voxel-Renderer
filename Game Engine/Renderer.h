@@ -6,6 +6,7 @@
 #include "VoxelWorld.h"
 #include <GLFW\glfw3.h>
 #include <set>
+#include "Entity.h"
 #define GLM_FORCE_DEPTH_ZERO_TO_ONE
 #define GLM_FORCE_RADIANS
 
@@ -25,10 +26,16 @@ public:
 	glm::vec3 up;
 	float distOcc;
 	bool perspective=true;
-	Renderer(GLFWwindow*  win, VoxelWorld _world);
+	Renderer(GLFWwindow*  win, std::vector<Entity*> en);
 	~Renderer();
 	void drawFrame();
 	void recreateSwapChain();
+	VkDescriptorSet createDescriptorSet(VkDescriptorSetLayout layout, VkWriteDescriptorSet buf);
+	void createBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, VkBuffer& buffer, VkDeviceMemory& bufferMemory);
+	void addEntity(Entity& buf);
+	VkShaderModule createShaderModule(const std::vector<char>& code);
+	void removeEntity(Entity& buf);
+	void recordCommandBuffers();
 private:
 	struct QueueFamilyIndices {
 		int graphicsFamily = -1;
@@ -54,84 +61,42 @@ private:
 	VkSemaphore renderFinishedSemaphore;
 	VkSurfaceKHR surf;
 	VkRenderPass renderPass;
-	VkPipeline graphicsPipeline;
+
 	std::vector<VkFramebuffer> swapChainFramebuffers;
-	VkDescriptorSetLayout descriptorSetLayout;
-	VkPipelineLayout pipelineLayout;
+
 	VkCommandPool commandPool;
 	std::vector<VkCommandBuffer> commandBuffers;
-	VoxelWorld voxels;
-	const std::vector<VertexSingle> cube = {
-		{ { -0.5f, -0.5f, 0.5f} },
-		{ { 0.5f, -0.5f, 0.5f } },
-		{ { 0.5f, 0.5f, 0.5f } },
-		{ { -0.5f, 0.5f, 0.5f  } },
-
-		{ { -0.5f, -0.5f, -0.5f } },
-		{ { 0.5f, -0.5f, -0.5f  } },
-		{ { 0.5f, 0.5f, -0.5f  } },
-		{ { -0.5f, 0.5f, -0.5f   } },
-	};
-	const std::vector<uint16_t> cubeIndex = {
-		0, 1, 2,
-		2, 3, 0,
-		// top
-		1, 5, 6,
-		6, 2, 1,
-		// back
-		7, 6, 5,
-		5, 4, 7,
-		// bottom
-		4, 0, 3,
-		3, 7, 4,
-		// left
-		4, 5, 1,
-		1, 0, 4,
-		// right
-		3, 2, 6,
-		6, 7, 3,
-	};
-	VkBuffer vertex, instBuf, index, uniform;
-
-	VkDeviceMemory vertexMem, instMem, indexMem, uniformMem;
-	std::tuple<double, double, double> plane;
-	double side;
 	VkDescriptorPool descriptorPool;
-	VkDescriptorSet descriptorSet;
 	VkImage depthImage;
 	VkDeviceMemory depthImageMemory;
 	VkImageView depthImageView;
-	std::set<VkCommandBuffer> secondaries;
+	std::set<Entity*> secondaries;
 
 	void cleanupSwapChain();
 	uint32_t findMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties);
 	void createSemaphores();
 	void createCommandBuffers();
 	void createCommandPool();
-	void createBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, VkBuffer& buffer, VkDeviceMemory& bufferMemory);
+	
 	void createRenderPass();
 	void createInstance();
 	void createDepthResources();
 	void createImage(uint32_t width, uint32_t height, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage, VkMemoryPropertyFlags properties, VkImage& image, VkDeviceMemory& imageMemory);
 	void setupDebugCallback();
-	void createDescriptorSet();
-	void addCommandBuffer(VkCommandBuffer buf);
-	void removeCommandBuffer(VkCommandBuffer buf);
+
+	
 	VkCommandBuffer getSecondaryBuffer();
 	void createFramebuffers();
 	VkFormat findDepthFormat();
 	VkFormat findSupportedFormat(const std::vector<VkFormat>& candidates, VkImageTiling tiling, VkFormatFeatureFlags features);
-	void recordCommandBuffers();
-	void createQueueFamilies();
+
 	void pickPhysicalDevice();
-	void createDescriptorSetLayout();
+
 	void createDescriptorPool();
-	void createVertexBuffers();
-	void updateUniformBuffer();
 	void createLogicalDevice();
 	void createImageViews();
-	void createGraphicsPipeline();
-	VkShaderModule createShaderModule(const std::vector<char>& code);
+
+
 	VkExtent2D chooseSwapExtent(const VkSurfaceCapabilitiesKHR& capabilities);
 	void createSwapChain();
 	bool checkDeviceExtensionSupport(VkPhysicalDevice device);
